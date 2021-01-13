@@ -176,6 +176,14 @@ function findHost(schema: JSONSchema7, name: string): JSONSchema7 {
         return maybeHost
       }
     }
+  } else if (schema.allOf) {
+    const maybeSchema = schema.allOf?.find((t) => typeof t === 'object' && t.properties)
+    if (typeof maybeSchema === 'object' && typeof maybeSchema.properties === 'object') {
+      const maybeHost = maybeSchema.properties[name]
+      if (maybeHost !== false && maybeHost !== true) {
+        return maybeHost
+      }
+    }
   } else if (schema.properties && schema.properties[name]) {
     const maybeHost = schema.properties[name]
     if (maybeHost !== false && maybeHost !== true) {
@@ -186,9 +194,10 @@ function findHost(schema: JSONSchema7, name: string): JSONSchema7 {
 }
 
 function inSchema(schema: JSONSchema7, op: LensIn): JSONSchema7 {
-  const properties: JSONSchema7 = schema.properties
-    ? schema.properties
-    : (schema.anyOf?.find((t) => typeof t === 'object' && t.properties) as any).properties
+  const properties: JSONSchema7 | undefined =
+    schema.properties ||
+    (schema.anyOf?.find((t) => typeof t === 'object' && t.properties) as any)?.properties ||
+    (schema.allOf?.find((t) => typeof t === 'object' && t.properties) as any)?.properties
 
   if (!properties) {
     throw new Error("Cannot look 'in' an object that doesn't have properties.")
